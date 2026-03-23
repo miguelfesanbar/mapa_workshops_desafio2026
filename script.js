@@ -1,36 +1,172 @@
+const API_URL = "https://script.google.com/macros/s/AKfycbyAoVMUKPBuJz-zHzeGaLaxyDrgOvDdCw06InKsBhHNjLRlvb_550lylLjw8Hgc8TlvBQ/exec";
 const map = L.map("map").setView([-16.6869, -49.2648], 7);
 
 L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
+
+const sidebar = document.getElementById("sidebar");
+const sidebarHandle = document.getElementById("sidebarHandle");
+const sidebarDragArea = document.getElementById("sidebarDragArea");
 const sidebarContent = document.getElementById("sidebar-content");
 const searchInput = document.getElementById("searchInput");
-const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+// const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+
+
 
 let marcadorSelecionado = null;
 let camadaMunicipioSelecionada = null;
 let geoJsonLayer = null;
 
+let workshopsPorCidade = {};
 const marcadores = [];
 
 const iconePadrao = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
+  iconSize: [30, 48],
+  iconAnchor: [15, 48],
+  popupAnchor: [1, -40],
   shadowSize: [41, 41]
 });
 
 const iconeSelecionado = L.icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
+  iconSize: [32, 52],
+  iconAnchor: [16, 52],
+  popupAnchor: [1, -42],
   shadowSize: [41, 41]
 });
+
+let sidebarMobileConfigurada = false;
+
+function abrirSidebarMobile() {
+  if (window.innerWidth <= 768) {
+    sidebar.classList.remove("collapsed");
+    sidebar.classList.add("expanded");
+    sidebar.style.height = `${Math.round(window.innerHeight * 0.82)}px`;
+  }
+}
+
+function fecharSidebarMobile() {
+  if (window.innerWidth <= 768) {
+    sidebar.classList.remove("expanded");
+    sidebar.classList.add("collapsed");
+    sidebar.style.height = "110px";
+  }
+}
+
+function configurarEstadoInicialSidebarMobile() {
+  if (!sidebar) return;
+
+  if (window.innerWidth <= 768) {
+    if (
+      !sidebar.classList.contains("collapsed") &&
+      !sidebar.classList.contains("expanded")
+    ) {
+      sidebar.classList.add("collapsed");
+      sidebar.style.height = "110px";
+    }
+  } else {
+    sidebar.classList.remove("collapsed", "expanded", "dragging");
+    sidebar.style.height = "";
+  }
+}
+
+function configurarSidebarMobile() {
+  if (!sidebar || !sidebarDragArea) return;
+
+  configurarEstadoInicialSidebarMobile();
+
+  if (sidebarMobileConfigurada) return;
+  sidebarMobileConfigurada = true;
+
+  let arrastando = false;
+  let inicioY = 0;
+  let alturaInicial = 0;
+  let moveu = false;
+
+  const alturaFechada = 110;
+  const obterAlturaAberta = () => Math.round(window.innerHeight * 0.82);
+
+  function iniciarArraste(clientY) {
+    if (window.innerWidth > 768) return;
+
+    arrastando = true;
+    moveu = false;
+    inicioY = clientY;
+    alturaInicial = sidebar.offsetHeight;
+    sidebar.classList.add("dragging");
+  }
+
+  function moverArraste(clientY) {
+    if (!arrastando || window.innerWidth > 768) return;
+
+    const deslocamento = inicioY - clientY;
+    if (Math.abs(deslocamento) > 5) {
+      moveu = true;
+    }
+
+    let novaAltura = alturaInicial + deslocamento;
+    const alturaAberta = obterAlturaAberta();
+
+    if (novaAltura < alturaFechada) novaAltura = alturaFechada;
+    if (novaAltura > alturaAberta) novaAltura = alturaAberta;
+
+    sidebar.style.height = `${novaAltura}px`;
+  }
+
+  function finalizarArraste() {
+    if (!arrastando) return;
+
+    arrastando = false;
+    sidebar.classList.remove("dragging");
+
+    const alturaAtual = sidebar.offsetHeight;
+    const alturaAberta = obterAlturaAberta();
+    const pontoDeCorte = (alturaFechada + alturaAberta) / 2;
+
+    if (alturaAtual >= pontoDeCorte) {
+      abrirSidebarMobile();
+    } else {
+      fecharSidebarMobile();
+    }
+  }
+
+  sidebarDragArea.addEventListener("pointerdown", (event) => {
+    if (window.innerWidth > 768) return;
+
+    iniciarArraste(event.clientY);
+    sidebarDragArea.setPointerCapture(event.pointerId);
+  });
+
+  sidebarDragArea.addEventListener("pointermove", (event) => {
+    moverArraste(event.clientY);
+  });
+
+  sidebarDragArea.addEventListener("pointerup", () => {
+    const houveArraste = moveu;
+    finalizarArraste();
+
+    if (!houveArraste && window.innerWidth <= 768) {
+      if (sidebar.classList.contains("collapsed")) {
+        abrirSidebarMobile();
+      } else {
+        fecharSidebarMobile();
+      }
+    }
+  });
+
+  sidebarDragArea.addEventListener("pointercancel", () => {
+    finalizarArraste();
+  });
+}
+
+function expandirSidebarNoMobile() {
+  abrirSidebarMobile();
+}
 
 function obterClasseStatus(status) {
   const statusNormalizado = status.toLowerCase();
@@ -60,12 +196,25 @@ function obterOrdemStatus(status) {
   return 99;
 }
 
+function formatarData(data) {
+  if (!data) return "";
+
+  // Caso já esteja no formato dd/mm/aaaa
+  if (typeof data === "string" && data.includes("/")) {
+    return data;
+  }
+
+  const dataObj = new Date(data);
+
+  if (isNaN(dataObj.getTime())) {
+    return String(data);
+  }
+
+  return dataObj.toLocaleDateString("pt-BR");
+}
+
 function mostrarMensagemInicial() {
-  sidebarContent.innerHTML = `
-    <div class="sidebar-empty">
-      Pesquise pelo nome da cidade ou da universidade, ou clique no município correspondente no mapa para visualizar o workshop de ideação.
-    </div>
-  `;
+  mostrarTodosOsWorkshops();
 }
 
 function montarCardWorkshop(workshop, nomeCidade) {
@@ -80,7 +229,7 @@ function montarCardWorkshop(workshop, nomeCidade) {
       <div class="workshop-description">${workshop.descricao}</div>
       <div class="workshop-item"><strong>Universidade:</strong> ${workshop.universidade}</div>
       <div class="workshop-item"><strong>Município:</strong> ${nomeCidade}</div>
-      <div class="workshop-item"><strong>Data:</strong> ${workshop.data}</div>
+      <div class="workshop-item"><strong>Data:</strong> ${formatarData(workshop.data)}</div>
       <div class="workshop-item"><strong>Horário:</strong> ${workshop.horario}</div>
       <div class="workshop-item"><strong>Local:</strong> ${workshop.local}</div>
       <div class="workshop-item"><strong>Instituição:</strong> ${workshop.instituicao}</div>
@@ -98,6 +247,60 @@ function montarCardWorkshop(workshop, nomeCidade) {
 
   html += `</div>`;
   return html;
+}
+
+function mostrarTodosOsWorkshops() {
+  const resultados = [];
+
+  for (const nomeCidade in workshopsPorCidade) {
+    const dadosCidade = workshopsPorCidade[nomeCidade];
+
+    const workshopsOrdenados = [...dadosCidade.workshops].sort((a, b) => {
+      return obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
+    });
+
+    if (workshopsOrdenados.length > 0) {
+      resultados.push({
+        nomeCidade,
+        workshops: workshopsOrdenados
+      });
+    }
+  }
+
+  if (resultados.length === 0) {
+    sidebarContent.innerHTML = `
+      <div class="sidebar-empty">
+        Nenhum workshop disponível no momento.
+      </div>
+    `;
+    return;
+  }
+
+  const totalWorkshops = resultados.reduce((total, item) => {
+    return total + item.workshops.length;
+  }, 0);
+
+  let html = `
+    <div class="city-title">Todos os workshops</div>
+    <div class="city-meta">
+      ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} disponível${totalWorkshops > 1 ? "is" : ""}
+    </div>
+  `;
+
+  resultados.forEach((resultado) => {
+    html += `
+      <div style="margin: 18px 0 10px; font-weight: bold; color: #0f172a;">
+        ${resultado.nomeCidade}
+      </div>
+    `;
+
+    resultado.workshops.forEach((workshop) => {
+      html += montarCardWorkshop(workshop, resultado.nomeCidade);
+    });
+  });
+
+  sidebarContent.innerHTML = html;
+  expandirSidebarNoMobile();
 }
 
 function mostrarWorkshops(nomeCidade, dadosCidade) {
@@ -127,6 +330,15 @@ function mostrarWorkshops(nomeCidade, dadosCidade) {
   }
 
   sidebarContent.innerHTML = html;
+  expandirSidebarNoMobile();
+}
+
+function mostrarCarregando() {
+  sidebarContent.innerHTML = `
+    <div class="sidebar-empty">
+      Carregando workshops e mapa...
+    </div>
+  `;
 }
 
 function estiloMunicipioBase(temWorkshop) {
@@ -208,7 +420,7 @@ function mostrarResultadosBusca(textoBusca) {
   const termo = textoBusca.toLowerCase().trim();
 
   if (termo === "") {
-    mostrarMensagemInicial();
+    mostrarTodosOsWorkshops();
     return;
   }
 
@@ -269,6 +481,7 @@ function mostrarResultadosBusca(textoBusca) {
   });
 
   sidebarContent.innerHTML = html;
+  expandirSidebarNoMobile();
 }
 
 function filtrarCidades(textoBusca) {
@@ -307,6 +520,22 @@ function filtrarCidades(textoBusca) {
   });
 
   mostrarResultadosBusca(textoBusca);
+}
+
+async function carregarWorkshopsDaAPI() {
+  try {
+    const resposta = await fetch(API_URL);
+    const dados = await resposta.json();
+    workshopsPorCidade = dados;
+  } catch (erro) {
+    console.error("Erro ao carregar workshops da API:", erro);
+
+    sidebarContent.innerHTML = `
+      <div class="sidebar-empty">
+        Não foi possível carregar os workshops da planilha.
+      </div>
+    `;
+  }
 }
 
 async function carregarGeoJSON() {
@@ -369,44 +598,89 @@ async function carregarGeoJSON() {
   }
 }
 
-mostrarMensagemInicial();
-
-for (const nomeCidade in workshopsPorCidade) {
-  const dadosCidade = workshopsPorCidade[nomeCidade];
-
-  const marcador = L.marker(dadosCidade.coordenadas, {
-    icon: iconePadrao
-  }).addTo(map);
-
-  marcador.bindPopup(`<strong>${nomeCidade}</strong>`);
-
-  const marcadorInfo = {
-    nomeCidade,
-    dadosCidade,
-    marcador,
-    camadaMunicipio: null
-  };
-
-  marcador.on("click", () => {
-    selecionarCidade(
-      marcadorInfo.nomeCidade,
-      marcadorInfo.dadosCidade,
-      marcadorInfo.marcador,
-      marcadorInfo.camadaMunicipio
-    );
+function criarMarcadores() {
+  marcadores.forEach((item) => {
+    if (map.hasLayer(item.marcador)) {
+      map.removeLayer(item.marcador);
+    }
   });
 
-  marcadores.push(marcadorInfo);
+  marcadores.length = 0;
+
+  for (const nomeCidade in workshopsPorCidade) {
+    const dadosCidade = workshopsPorCidade[nomeCidade];
+
+    const marcador = L.marker(dadosCidade.coordenadas, {
+      icon: iconePadrao
+    }).addTo(map);
+
+    marcador.bindPopup(`<strong>${nomeCidade}</strong>`);
+
+    const marcadorInfo = {
+      nomeCidade,
+      dadosCidade,
+      marcador,
+      camadaMunicipio: null
+    };
+
+    marcador.on("click", () => {
+      selecionarCidade(
+        marcadorInfo.nomeCidade,
+        marcadorInfo.dadosCidade,
+        marcadorInfo.marcador,
+        marcadorInfo.camadaMunicipio
+      );
+    });
+
+    marcadores.push(marcadorInfo);
+  }
 }
 
-carregarGeoJSON();
+async function iniciarMapa() {
+  mostrarCarregando();
+
+  await carregarWorkshopsDaAPI();
+  criarMarcadores();
+  mostrarTodosOsWorkshops();
+
+  setTimeout(async () => {
+    await carregarGeoJSON();
+  }, 100);
+}
+
+iniciarMapa();
 
 searchInput.addEventListener("input", (event) => {
-  filtrarCidades(event.target.value);
+  const valor = event.target.value;
+
+  if (valor.trim() === "") {
+    limparSelecao();
+    filtrarCidades("");
+    return;
+  }
+
+  filtrarCidades(valor);
 });
 
-clearSelectionBtn.addEventListener("click", () => {
-  searchInput.value = "";
-  filtrarCidades("");
-  limparSelecao();
+let cacheDados = "";
+
+async function atualizarDadosSeMudou() {
+  const resposta = await fetch(API_URL);
+  const texto = await resposta.text();
+
+  if (texto !== cacheDados) {
+    cacheDados = texto;
+    workshopsPorCidade = JSON.parse(texto);
+
+    criarMarcadores();
+    mostrarResultadosBusca(searchInput.value);
+  }
+}
+
+setInterval(atualizarDadosSeMudou, 30000);
+
+configurarSidebarMobile();
+
+window.addEventListener("resize", () => {
+  configurarEstadoInicialSidebarMobile();
 });
