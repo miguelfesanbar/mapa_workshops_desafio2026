@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa de Workshops de Ideação - Desafio Agrostartup</title>
+
+  <!-- CSS do Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <div class="map-area">
+      <div class="topbar">
+        <h1>Workshops de Ideação</h1>
+        <p>Clique em uma cidade ou em sua área no mapa para ver os workshops disponíveis</p>
+      </div>
+    
+      <div style="position: relative; flex: 1;">
+        <div id="map" style="height: 100%; width: 100%;"></div>
+    
+        <div class="legend-box">
+          <strong>Legenda</strong>
+          Áreas destacadas representam cidades com workshops cadastrados.
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>Workshops de Ideação</h2>
+        <p>Informações do local selecionado</p>
+      </div>
+    
+      <div class="sidebar-tools">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Buscar cidade ou IES..."
+        />
+        <button id="clearSelectionBtn">Limpar seleção</button>
+      </div>
+      
+      <div id="sidebar-content" class="sidebar-content">
+        <p>Selecione uma cidade no mapa para visualizar os workshops.</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- JS do Leaflet -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
