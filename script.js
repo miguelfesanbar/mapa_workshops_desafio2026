@@ -5,15 +5,39 @@ L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
+// L.marker([-16.6869, -49.2648]).addTo(map).bindPopup("Teste Goiânia");
+
 
 const sidebar = document.getElementById("sidebar");
 const sidebarHandle = document.getElementById("sidebarHandle");
 const sidebarDragArea = document.getElementById("sidebarDragArea");
 const sidebarContent = document.getElementById("sidebar-content");
 const searchInput = document.getElementById("searchInput");
-// const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+const clearSearchBtn = document.getElementById("clearSearchBtn");
 
+// Quando digitar
+if (searchInput) {
+  searchInput.addEventListener("input", (e) => {
+    const valor = e.target.value;
 
+    filtrarCidades(valor);
+
+    if (clearSearchBtn) {
+      clearSearchBtn.style.display = valor ? "block" : "none";
+    }
+  });
+}
+
+// Quando clicar no X
+if (clearSearchBtn) {
+  clearSearchBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    clearSearchBtn.style.display = "none";
+
+    limparSelecao();
+    filtrarCidades("");
+  });
+}
 
 let marcadorSelecionado = null;
 let camadaMunicipioSelecionada = null;
@@ -22,22 +46,11 @@ let geoJsonLayer = null;
 let workshopsPorCidade = {};
 const marcadores = [];
 
-const iconePadrao = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [30, 48],
-  iconAnchor: [15, 48],
-  popupAnchor: [1, -40],
-  shadowSize: [41, 41]
-});
-
-const iconeSelecionado = L.icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [32, 52],
-  iconAnchor: [16, 52],
-  popupAnchor: [1, -42],
-  shadowSize: [41, 41]
+const iconeCidade = L.divIcon({
+  className: "custom-marker",
+  html: `<div class="pin"></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
 });
 
 let sidebarMobileConfigurada = false;
@@ -281,10 +294,15 @@ function mostrarTodosOsWorkshops() {
   }, 0);
 
   let html = `
+  <div class="city-header-row">
     <div class="city-title">Todos os workshops</div>
-    <div class="city-meta">
-      ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} disponível${totalWorkshops > 1 ? "is" : ""}
-    </div>
+    <button class="clear-filter-btn" id="clearFilterBtn" type="button">
+      Limpar
+    </button>
+  </div>
+  <div class="city-meta">
+    ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} ${totalWorkshops > 1 ? "disponíveis" : "disponível"}
+  </div>
   `;
 
   resultados.forEach((resultado) => {
@@ -300,6 +318,14 @@ function mostrarTodosOsWorkshops() {
   });
 
   sidebarContent.innerHTML = html;
+  const clearFilterBtn = document.getElementById("clearFilterBtn");
+  if (clearFilterBtn) {
+  clearFilterBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    limparSelecao();
+    filtrarCidades("");
+  });
+}
   expandirSidebarNoMobile();
 }
 
@@ -310,12 +336,17 @@ function mostrarWorkshops(nomeCidade, dadosCidade) {
 
   const quantidade = workshopsOrdenados.length;
 
-  let html = `
+let html = `
+  <div class="city-header-row">
     <div class="city-title">${nomeCidade}</div>
-    <div class="city-meta">
-      ${quantidade} workshop${quantidade > 1 ? "s" : ""} encontrado${quantidade > 1 ? "s" : ""}
-    </div>
-  `;
+    <button class="clear-filter-btn" id="clearFilterBtn" type="button">
+      Limpar
+    </button>
+  </div>
+  <div class="city-meta">
+    ${quantidade} workshop${quantidade > 1 ? "s" : ""} encontrado${quantidade > 1 ? "s" : ""}
+  </div>
+`;
 
   if (quantidade === 0) {
     html += `
@@ -330,6 +361,15 @@ function mostrarWorkshops(nomeCidade, dadosCidade) {
   }
 
   sidebarContent.innerHTML = html;
+  const clearFilterBtn = document.getElementById("clearFilterBtn");
+if (clearFilterBtn) {
+  clearFilterBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    limparSelecao();
+    filtrarCidades("");
+  });
+}
+
   expandirSidebarNoMobile();
 }
 
@@ -374,17 +414,12 @@ function obterNomeMunicipio(feature) {
 }
 
 function selecionarCidade(nomeCidade, dadosCidade, marcador, camadaMunicipio) {
-  if (marcadorSelecionado) {
-    marcadorSelecionado.setIcon(iconePadrao);
-  }
-
   if (camadaMunicipioSelecionada) {
     const nomeAnterior = obterNomeMunicipio(camadaMunicipioSelecionada.feature);
     const temWorkshopAnterior = !!workshopsPorCidade[nomeAnterior];
     resetarMunicipio(camadaMunicipioSelecionada, temWorkshopAnterior);
   }
 
-  marcador.setIcon(iconeSelecionado);
   marcadorSelecionado = marcador;
 
   if (camadaMunicipio) {
@@ -400,10 +435,7 @@ function selecionarCidade(nomeCidade, dadosCidade, marcador, camadaMunicipio) {
 }
 
 function limparSelecao() {
-  if (marcadorSelecionado) {
-    marcadorSelecionado.setIcon(iconePadrao);
-    marcadorSelecionado = null;
-  }
+  marcadorSelecionado = null;
 
   if (camadaMunicipioSelecionada) {
     const nomeCidade = obterNomeMunicipio(camadaMunicipioSelecionada.feature);
@@ -530,6 +562,7 @@ async function carregarWorkshopsDaAPI() {
   } catch (erro) {
     console.error("Erro ao carregar workshops da API:", erro);
 
+
     sidebarContent.innerHTML = `
       <div class="sidebar-empty">
         Não foi possível carregar os workshops da planilha.
@@ -610,15 +643,35 @@ function criarMarcadores() {
   for (const nomeCidade in workshopsPorCidade) {
     const dadosCidade = workshopsPorCidade[nomeCidade];
 
-    const marcador = L.marker(dadosCidade.coordenadas, {
-      icon: iconePadrao
+    let latitude = dadosCidade.coordenadas?.[0];
+    let longitude = dadosCidade.coordenadas?.[1];
+
+    latitude = Number(latitude);
+    longitude = Number(longitude);
+
+    // Corrige coordenadas sem ponto decimal
+    if (Math.abs(latitude) > 90) latitude = latitude / 10000;
+    if (Math.abs(longitude) > 180) longitude = longitude / 10000;
+
+    if (isNaN(latitude) || isNaN(longitude)) {
+      console.warn(`Coordenadas inválidas para ${nomeCidade}:`, dadosCidade);
+      continue;
+    }
+
+    const coordenadasCorrigidas = [latitude, longitude];
+
+    const marcador = L.marker(coordenadasCorrigidas, {
+      icon: iconeCidade
     }).addTo(map);
 
     marcador.bindPopup(`<strong>${nomeCidade}</strong>`);
 
     const marcadorInfo = {
       nomeCidade,
-      dadosCidade,
+      dadosCidade: {
+        ...dadosCidade,
+        coordenadas: coordenadasCorrigidas
+      },
       marcador,
       camadaMunicipio: null
     };

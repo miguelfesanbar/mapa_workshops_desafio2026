@@ -372,3 +372,143 @@ body {
   }
 }
 
+.custom-city-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.custom-city-marker {
+  position: relative;
+  width: 26px;
+  height: 38px;
+  background: linear-gradient(180deg, #0f766e, #0b5d56);
+  border: 2px solid #ffffff;
+  border-radius: 18px 18px 18px 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28);
+}
+
+.custom-city-marker span {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.custom-city-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.custom-city-marker {
+  position: relative;
+  width: 26px;
+  height: 38px;
+  background: linear-gradient(180deg, #0f766e, #155e75);
+  border: 2px solid #ffffff;
+  border-radius: 18px 18px 18px 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28);
+}
+
+.custom-city-marker span {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.custom-marker .pin {
+  width: 16px;
+  height: 16px;
+  background-color: #2ecc71; /* verde */
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 6px rgba(0,0,0,0.3);
+  transition: transform 0.2s ease;
+}
+
+.custom-marker .pin:hover {
+  transform: scale(1.3);
+}
+
+.city-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clear-filter-btn {
+  border: 1px solid #10b981;
+  background: #ecfdf5;
+  color: #047857;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-filter-btn:hover {
+  background: #d1fae5;
+  transform: translateY(-1px);
+}
+
+.clear-filter-btn:active {
+  transform: translateY(0);
+}
+
+.search-container {
+  position: relative;
+  width: 100%;
+}
+
+#searchInput {
+  width: 100%;
+  padding-right: 35px; /* espaço pro X */
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #999;
+  display: none; /* começa escondido */
+}
+
+.clear-search-btn:hover {
+  color: #10b981; /* verde */
+}
+
+.search-container {
+  position: relative;
+}
+
+#searchInput {
+  padding-right: 35px;
+}
+
+#clearSearchBtn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: none;
+}
