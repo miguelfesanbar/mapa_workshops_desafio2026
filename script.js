@@ -270,7 +270,14 @@ function mostrarTodosOsWorkshops() {
     const dadosCidade = workshopsPorCidade[nomeCidade];
 
     const workshopsOrdenados = [...dadosCidade.workshops].sort((a, b) => {
-      return obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
+      const ordemStatus = obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
+      if (ordemStatus !== 0) return ordemStatus;
+    
+      // Se o status for igual, ordenar por data
+      const dataA = new Date(a.data);
+      const dataB = new Date(b.data);
+    
+      return dataA - dataB;
     });
 
     if (workshopsOrdenados.length > 0) {
@@ -332,8 +339,16 @@ function mostrarTodosOsWorkshops() {
 
 function mostrarWorkshops(nomeCidade, dadosCidade) {
   const workshopsOrdenados = [...dadosCidade.workshops].sort((a, b) => {
-    return obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
+    const ordemStatus = obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
+    if (ordemStatus !== 0) return ordemStatus;
+  
+    // Se o status for igual, ordenar por data
+    const dataA = new Date(a.data);
+    const dataB = new Date(b.data);
+  
+    return dataA - dataB;
   });
+  
 
   const quantidade = workshopsOrdenados.length;
 
@@ -757,7 +772,7 @@ async function atualizarDadosSeMudou() {
   const resposta = await fetch(API_URL);
   const texto = await resposta.text();
 
-  desenharContornoGoias(geojson);
+  // desenharContornoGoias(geojson);
 
   if (texto !== cacheDados) {
     cacheDados = texto;
