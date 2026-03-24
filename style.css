@@ -261,6 +261,7 @@ body {
 }
 
 @media (max-width: 768px) {
+
   .app {
     position: relative;
     display: block;
@@ -511,4 +512,35 @@ body {
   background: transparent;
   cursor: pointer;
   display: none;
+}
+
+
+.topbar-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-logo {
+  width: 200px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.topbar-text {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+
+  .topbar-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .topbar-logo {
+    width: 140px;
+  }
+
 }

@@ -11,15 +11,23 @@
     href="https://unpkg.com/leaflet/dist/leaflet.css"
   />
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
   <div class="app">
     <div class="map-area">
       <div class="topbar">
-        <h1>Mapa de Workshops de Ideação</h1>
-        <p>Pesquise por cidade ou universidade e clique no mapa para ver os workshops</p>
-      </div>
+  <div class="topbar-content">
+    
+    <img src="https://sistemafaeg.com.br/dist/img/logos/logo-desafio-agrostartup-10-anos.webp" alt="Logo" class="topbar-logo">
+    
+    <div class="topbar-text">
+      <h1>Mapa de Workshops de Ideação</h1>
+      <p>Pesquise por cidade ou universidade e clique no mapa para ver os workshops</p>
+    </div>
+
+  </div>
+</div>
     
       <div class="map-search-bar">
         <div class="search-container">
@@ -31,10 +39,10 @@
       <div class="map-wrapper">
         <div id="map"></div>
     
-        <div class="legend-box">
+        <!-- <div class="legend-box">
           <strong>Legenda</strong>
           Áreas destacadas representam cidades com workshops cadastrados.
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -55,6 +63,7 @@
   <!-- JS do Leaflet -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=3"></script>
 </body>
+
 </html>

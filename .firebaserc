@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "mapa-workshops-goias"
-  }
+    "default": "mapa-workshops-ideacao"
+  },
+  "targets": {},
+  "etags": {}
 }

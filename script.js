@@ -42,6 +42,7 @@ if (clearSearchBtn) {
 let marcadorSelecionado = null;
 let camadaMunicipioSelecionada = null;
 let geoJsonLayer = null;
+let contornoGoiasLayer = null;
 
 let workshopsPorCidade = {};
 const marcadores = [];
@@ -631,6 +632,24 @@ async function carregarGeoJSON() {
   }
 }
 
+function desenharContornoGoias(geojson) {
+  if (contornoGoiasLayer) {
+    map.removeLayer(contornoGoiasLayer);
+  }
+
+  contornoGoiasLayer = L.geoJSON(geojson, {
+    style: {
+      color: "#166534",
+      weight: 4,
+      fill: false,
+      opacity: 1
+    },
+    interactive: false
+  }).addTo(map);
+
+  contornoGoiasLayer.bringToFront();
+}
+
 function criarMarcadores() {
   marcadores.forEach((item) => {
     if (map.hasLayer(item.marcador)) {
@@ -689,6 +708,22 @@ function criarMarcadores() {
   }
 }
 
+async function carregarContornoEstado() {
+  const resposta = await fetch("./dados/goias-estado.geojson");
+  const geojsonEstado = await resposta.json();
+
+  L.geoJSON(geojsonEstado, {
+    style: {
+      color: "#166534",
+      weight: 2,
+      fill: "white",
+      fillOpacity: 0.04,
+      opacity: 1
+    },
+    interactive: false
+  }).addTo(map).bringToFront();
+}
+
 async function iniciarMapa() {
   mostrarCarregando();
 
@@ -698,6 +733,7 @@ async function iniciarMapa() {
 
   setTimeout(async () => {
     await carregarGeoJSON();
+    await carregarContornoEstado();
   }, 100);
 }
 
@@ -720,6 +756,8 @@ let cacheDados = "";
 async function atualizarDadosSeMudou() {
   const resposta = await fetch(API_URL);
   const texto = await resposta.text();
+
+  desenharContornoGoias(geojson);
 
   if (texto !== cacheDados) {
     cacheDados = texto;
