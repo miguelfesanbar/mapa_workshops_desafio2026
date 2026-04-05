@@ -9,43 +9,354 @@ L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
 
 
 const sidebar = document.getElementById("sidebar");
-const sidebarHandle = document.getElementById("sidebarHandle");
 const sidebarDragArea = document.getElementById("sidebarDragArea");
 const sidebarContent = document.getElementById("sidebar-content");
 const searchInput = document.getElementById("searchInput");
 const clearSearchBtn = document.getElementById("clearSearchBtn");
+const locateUserBtn = document.getElementById("locateUserBtn");
+const searchBar = document.querySelector(".map-search-bar");
 
-// Quando digitar
-if (searchInput) {
-  searchInput.addEventListener("input", (e) => {
-    const valor = e.target.value;
-
-    filtrarCidades(valor);
-
-    if (clearSearchBtn) {
-      clearSearchBtn.style.display = valor ? "block" : "none";
-    }
-  });
+function normalizarTexto(valor) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
-// Quando clicar no X
-if (clearSearchBtn) {
-  clearSearchBtn.addEventListener("click", () => {
-    searchInput.value = "";
-    clearSearchBtn.style.display = "none";
-
-    limparSelecao();
-    filtrarCidades("");
-  });
+function atualizarVisibilidadeBotaoLimpar() {
+  if (!clearSearchBtn || !searchInput) return;
+  clearSearchBtn.style.display = searchInput.value.trim() ? "block" : "none";
 }
 
 let marcadorSelecionado = null;
 let camadaMunicipioSelecionada = null;
 let geoJsonLayer = null;
 let contornoGoiasLayer = null;
+let cacheDados = "";
 
 let workshopsPorCidade = {};
 const marcadores = [];
+
+const REGIOES_CONFIG = {
+  centro_leste: {
+    nome: "Centro Leste",
+    cor: "#fde68a",
+    municipios: [
+      "Abadiânia",
+      "Águas Lindas de Goiás",
+      "Alexânia",
+      "Anápolis",
+      "Bonfinópolis",
+      "Campo Limpo de Goiás",
+      "Cocalzinho de Goiás",
+      "Corumbá de Goiás",
+      "Gameleira de Goiás",
+      "Goianápolis",
+      "Leopoldo de Bulhões",
+      "Mimoso de Goiás",
+      "Nerópolis",
+      "Ouro Verde de Goiás",
+      "Padre Bernardo",
+      "Petrolina de Goiás",
+      "Pirenópolis",
+      "Santo Antônio do Descoberto",
+      "Silvânia",
+      "Terezópolis de Goiás",
+      "Vianópolis"
+    ]
+  },
+  centro_norte: {
+    nome: "Centro Norte",
+    cor: "#bfdbfe",
+    municipios: [
+      "Adelândia",
+      "Americano do Brasil",
+      "Anicuns",
+      "Araçu",
+      "Avelinópolis",
+      "Carmo do Rio Verde",
+      "Damolândia",
+      "Guaraíta",
+      "Heitoraí",
+      "Inhumas",
+      "Itaberaí",
+      "Itaguari",
+      "Itaguaru",
+      "Itapuranga",
+      "Itauçu",
+      "Jaraguá",
+      "Jesúpolis",
+      "Santa Rosa de Goiás",
+      "São Francisco de Goiás",
+      "São Patrício",
+      "Taquaral de Goiás",
+      "Uruana"
+    ]
+  },
+  extremo_sudoeste: {
+    nome: "Extremo Sudoeste",
+    cor: "#c7d2fe",
+    municipios: [
+      "Aparecida do Rio Doce",
+      "Aporé",
+      "Cachoeira Alta",
+      "Caçu",
+      "Chapadão do Céu",
+      "Itajá",
+      "Itarumã",
+      "Jataí",
+      "Lagoa Santa",
+      "Mineiros",
+      "Paranaiguara",
+      "Perolândia",
+      "Portelândia",
+      "Santa Rita do Araguaia",
+      "São Simão",
+      "Serranópolis"
+    ]
+  },
+  leste: {
+    nome: "Leste",
+    cor: "#bbf7d0",
+    municipios: [
+      "Anhanguera",
+      "Campo Alegre de Goiás",
+      "Catalão",
+      "Cidade Ocidental",
+      "Cristalina",
+      "Cumari",
+      "Davinópolis",
+      "Goiandira",
+      "Ipameri",
+      "Luziânia",
+      "Nova Aurora",
+      "Novo Gama",
+      "Orizona",
+      "Ouvidor",
+      "Palmelo",
+      "Pires do Rio",
+      "Santa Cruz de Goiás",
+      "Três Ranchos",
+      "Urutaí",
+      "Valparaíso de Goiás"
+    ]
+  },
+  medio_norte: {
+    nome: "Médio Norte",
+    cor: "#fbcfe8",
+    municipios: [
+      "Barro Alto",
+      "Campos Verdes",
+      "Ceres",
+      "Colinas do Sul",
+      "Crixás",
+      "Goianésia",
+      "Guarinos",
+      "Hidrolina",
+      "Ipiranga de Goiás",
+      "Itapaci",
+      "Morro Agudo de Goiás",
+      "Niquelândia",
+      "Nova América",
+      "Nova Glória",
+      "Pilar de Goiás",
+      "Rialma",
+      "Rianápolis",
+      "Rubiataba",
+      "Santa Isabel",
+      "Santa Rita do Novo Destino",
+      "Santa Terezinha de Goiás",
+      "São Luíz do Norte",
+      "Uirapuru",
+      "Uruaçu",
+      "Vila Propício"
+    ]
+  },
+  metropolitana: {
+    nome: "Metropolitana",
+    cor: "#fecaca",
+    municipios: [
+      "Abadia de Goiás",
+      "Aparecida de Goiânia",
+      "Aragoiânia",
+      "Bela Vista de Goiás",
+      "Brazabrantes",
+      "Caldazinha",
+      "Campestre de Goiás",
+      "Caturaí",
+      "Cezarina",
+      "Cristianópolis",
+      "Goiânia",
+      "Goianira",
+      "Guapó",
+      "Hidrolândia",
+      "Nazário",
+      "Nova Veneza",
+      "Palmeiras de Goiás",
+      "Palminópolis",
+      "Santa Bárbara de Goiás",
+      "Santo Antônio de Goiás",
+      "São Miguel do Passa Quatro",
+      "Senador Canedo",
+      "Trindade",
+      "Turvânia",
+      "Varjão"
+    ]
+  },
+  nordeste: {
+    nome: "Nordeste",
+    cor: "#a7f3d0",
+    municipios: [
+      "Água Fria de Goiás",
+      "Alto Paraíso de Goiás",
+      "Alvorada do Norte",
+      "Buritinópolis",
+      "Cabeceiras",
+      "Campos Belos",
+      "Cavalcante",
+      "Damianópolis",
+      "Divinópolis de Goiás",
+      "Flores de Goiás",
+      "Formosa",
+      "Guarani de Goiás",
+      "Iaciara",
+      "Mambaí",
+      "Monte Alegre de Goiás",
+      "Nova Roma",
+      "Planaltina",
+      "Posse",
+      "São Domingos",
+      "São João D Aliança",
+      "Simolândia",
+      "Sítio D Abadia",
+      "Teresina de Goiás",
+      "Vila Boa"
+    ]
+  },
+  norte: {
+    nome: "Norte",
+    cor: "#ddd6fe",
+    municipios: [
+      "Alto Horizonte",
+      "Amaralina",
+      "Bonópolis",
+      "Campinaçu",
+      "Campinorte",
+      "Estrela do Norte",
+      "Formoso",
+      "Mara Rosa",
+      "Minaçu",
+      "Montividiu do Norte",
+      "Mutunópolis",
+      "Nova Iguaçu de Goiás",
+      "Novo Planalto",
+      "Porangatu",
+      "Santa Tereza de Goiás",
+      "São Miguel do Araguaia",
+      "Trombas"
+    ]
+  },
+  oeste: {
+    nome: "Oeste",
+    cor: "#fdba74",
+    municipios: [
+      "Amorinópolis",
+      "Aragarças",
+      "Arenópolis",
+      "Aurilândia",
+      "Baliza",
+      "Bom Jardim de Goiás",
+      "Cachoeira de Goiás",
+      "Caiapônia",
+      "Córrego do Ouro",
+      "Diorama",
+      "Doverlândia",
+      "Fazenda Nova",
+      "Firminópolis",
+      "Iporá",
+      "Israelândia",
+      "Ivolândia",
+      "Moiporá",
+      "Palestina de Goiás",
+      "Piranhas",
+      "São João da Paraúna",
+      "São Luís de Montes Belos"
+    ]
+  },
+  sudoeste: {
+    nome: "Sudoeste",
+    cor: "#f9a8d4",
+    municipios: [
+      "Acreúna",
+      "Castelândia",
+      "Edealina",
+      "Edéia",
+      "Gouvelândia",
+      "Inaciolândia",
+      "Indiara",
+      "Jandaia",
+      "Maurilândia",
+      "Montividiu",
+      "Paraúna",
+      "Porteirão",
+      "Quirinópolis",
+      "Rio Verde",
+      "Santa Helena de Goiás",
+      "Santo Antônio da Barra",
+      "Turvelândia"
+    ]
+  },
+  sul: {
+    nome: "Sul",
+    cor: "#bae6fd",
+    municipios: [
+      "Água Limpa",
+      "Aloândia",
+      "Bom Jesus de Goiás",
+      "Buriti Alegre",
+      "Cachoeira Dourada",
+      "Caldas Novas",
+      "Corumbaíba",
+      "Cromínia",
+      "Goiatuba",
+      "Itumbiara",
+      "Joviânia",
+      "Mairipotaba",
+      "Marzagão",
+      "Morrinhos",
+      "Panamá",
+      "Piracanjuba",
+      "Pontalina",
+      "Professor Jamil",
+      "Rio Quente",
+      "Vicentinópolis"
+    ]
+  },
+  vale_do_araguaia: {
+    nome: "Vale do Araguaia",
+    cor: "#d9f99d",
+    municipios: [
+      "Araguapaz",
+      "Aruanã",
+      "Britânia",
+      "Buriti de Goiás",
+      "Faina",
+      "Goiás",
+      "Itapirapuã",
+      "Jussara",
+      "Matrinchã",
+      "Montes Claros de Goiás",
+      "Mossâmedes",
+      "Mozarlândia",
+      "Mundo Novo de Goiás",
+      "Nova Crixás",
+      "Novo Brasil",
+      "Sanclerlândia",
+      "Santa Fé de Goiás"
+    ]
+  }
+};
 
 const iconeCidade = L.divIcon({
   className: "custom-marker",
@@ -55,12 +366,23 @@ const iconeCidade = L.divIcon({
 });
 
 let sidebarMobileConfigurada = false;
+const ALTURA_SIDEBAR_FECHADA = 110;
+
+function obterAlturaAbertaSidebarMobile() {
+  if (!sidebar) return ALTURA_SIDEBAR_FECHADA;
+  if (!searchBar) return Math.round(window.innerHeight * 0.82);
+
+  const searchBarRect = searchBar.getBoundingClientRect();
+  const espacoDisponivel = window.innerHeight - searchBarRect.bottom;
+
+  return Math.max(ALTURA_SIDEBAR_FECHADA, Math.round(espacoDisponivel));
+}
 
 function abrirSidebarMobile() {
   if (window.innerWidth <= 768) {
     sidebar.classList.remove("collapsed");
     sidebar.classList.add("expanded");
-    sidebar.style.height = `${Math.round(window.innerHeight * 0.82)}px`;
+    sidebar.style.height = `${obterAlturaAbertaSidebarMobile()}px`;
   }
 }
 
@@ -68,7 +390,7 @@ function fecharSidebarMobile() {
   if (window.innerWidth <= 768) {
     sidebar.classList.remove("expanded");
     sidebar.classList.add("collapsed");
-    sidebar.style.height = "110px";
+    sidebar.style.height = `${ALTURA_SIDEBAR_FECHADA}px`;
   }
 }
 
@@ -81,7 +403,9 @@ function configurarEstadoInicialSidebarMobile() {
       !sidebar.classList.contains("expanded")
     ) {
       sidebar.classList.add("collapsed");
-      sidebar.style.height = "110px";
+      sidebar.style.height = `${ALTURA_SIDEBAR_FECHADA}px`;
+    } else if (sidebar.classList.contains("expanded")) {
+      sidebar.style.height = `${obterAlturaAbertaSidebarMobile()}px`;
     }
   } else {
     sidebar.classList.remove("collapsed", "expanded", "dragging");
@@ -102,8 +426,8 @@ function configurarSidebarMobile() {
   let alturaInicial = 0;
   let moveu = false;
 
-  const alturaFechada = 110;
-  const obterAlturaAberta = () => Math.round(window.innerHeight * 0.82);
+  const alturaFechada = ALTURA_SIDEBAR_FECHADA;
+  const obterAlturaAberta = () => obterAlturaAbertaSidebarMobile();
 
   function iniciarArraste(clientY) {
     if (window.innerWidth > 768) return;
@@ -183,7 +507,7 @@ function expandirSidebarNoMobile() {
 }
 
 function obterClasseStatus(status) {
-  const statusNormalizado = status.toLowerCase();
+  const statusNormalizado = normalizarTexto(status);
 
   if (statusNormalizado.includes("aberta")) return "aberto";
   if (
@@ -197,7 +521,7 @@ function obterClasseStatus(status) {
 }
 
 function obterOrdemStatus(status) {
-  const statusNormalizado = status.toLowerCase();
+  const statusNormalizado = normalizarTexto(status);
 
   if (statusNormalizado.includes("aberta")) return 1;
   if (
@@ -227,13 +551,44 @@ function formatarData(data) {
   return dataObj.toLocaleDateString("pt-BR");
 }
 
+function converterParaDataOrdenacao(data) {
+  if (!data) return null;
+
+  if (typeof data === "string") {
+    const texto = data.trim();
+    const match = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+    if (match) {
+      const [, dia, mes, ano] = match;
+      return new Date(Number(ano), Number(mes) - 1, Number(dia));
+    }
+  }
+
+  const dataObj = new Date(data);
+  return isNaN(dataObj.getTime()) ? null : dataObj;
+}
+
+function compararWorkshops(a, b) {
+  const ordemStatus = obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
+  if (ordemStatus !== 0) return ordemStatus;
+
+  const dataA = converterParaDataOrdenacao(a.data);
+  const dataB = converterParaDataOrdenacao(b.data);
+
+  if (dataA && dataB) return dataA - dataB;
+  if (dataA) return -1;
+  if (dataB) return 1;
+
+  return 0;
+}
+
 function mostrarMensagemInicial() {
   mostrarTodosOsWorkshops();
 }
 
 function montarCardWorkshop(workshop, nomeCidade) {
   const classeStatus = obterClasseStatus(workshop.status);
-  const inscricaoEncerrada = workshop.status.toLowerCase().includes("encerrado");
+  const inscricaoEncerrada = normalizarTexto(workshop.status).includes("encerrado");
   const tituloAcao = `${workshop.universidade} - Workshop de Ideação`;
 
   let html = `
@@ -241,7 +596,6 @@ function montarCardWorkshop(workshop, nomeCidade) {
       <h4>${tituloAcao}</h4>
       <div class="status-badge ${classeStatus}">${workshop.status}</div>
       <div class="workshop-description">${workshop.descricao}</div>
-      <div class="workshop-item"><strong>Universidade:</strong> ${workshop.universidade}</div>
       <div class="workshop-item"><strong>Município:</strong> ${nomeCidade}</div>
       <div class="workshop-item"><strong>Data:</strong> ${formatarData(workshop.data)}</div>
       <div class="workshop-item"><strong>Horário:</strong> ${workshop.horario}</div>
@@ -269,16 +623,7 @@ function mostrarTodosOsWorkshops() {
   for (const nomeCidade in workshopsPorCidade) {
     const dadosCidade = workshopsPorCidade[nomeCidade];
 
-    const workshopsOrdenados = [...dadosCidade.workshops].sort((a, b) => {
-      const ordemStatus = obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
-      if (ordemStatus !== 0) return ordemStatus;
-    
-      // Se o status for igual, ordenar por data
-      const dataA = new Date(a.data);
-      const dataB = new Date(b.data);
-    
-      return dataA - dataB;
-    });
+    const workshopsOrdenados = [...dadosCidade.workshops].sort(compararWorkshops);
 
     if (workshopsOrdenados.length > 0) {
       resultados.push({
@@ -304,9 +649,6 @@ function mostrarTodosOsWorkshops() {
   let html = `
   <div class="city-header-row">
     <div class="city-title">Todos os workshops</div>
-    <button class="clear-filter-btn" id="clearFilterBtn" type="button">
-      Limpar
-    </button>
   </div>
   <div class="city-meta">
     ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} ${totalWorkshops > 1 ? "disponíveis" : "disponível"}
@@ -315,7 +657,7 @@ function mostrarTodosOsWorkshops() {
 
   resultados.forEach((resultado) => {
     html += `
-      <div style="margin: 18px 0 10px; font-weight: bold; color: #0f172a;">
+      <div class="city-section-title">
         ${resultado.nomeCidade}
       </div>
     `;
@@ -326,28 +668,11 @@ function mostrarTodosOsWorkshops() {
   });
 
   sidebarContent.innerHTML = html;
-  const clearFilterBtn = document.getElementById("clearFilterBtn");
-  if (clearFilterBtn) {
-  clearFilterBtn.addEventListener("click", () => {
-    searchInput.value = "";
-    limparSelecao();
-    filtrarCidades("");
-  });
-}
   expandirSidebarNoMobile();
 }
 
 function mostrarWorkshops(nomeCidade, dadosCidade) {
-  const workshopsOrdenados = [...dadosCidade.workshops].sort((a, b) => {
-    const ordemStatus = obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
-    if (ordemStatus !== 0) return ordemStatus;
-  
-    // Se o status for igual, ordenar por data
-    const dataA = new Date(a.data);
-    const dataB = new Date(b.data);
-  
-    return dataA - dataB;
-  });
+  const workshopsOrdenados = [...dadosCidade.workshops].sort(compararWorkshops);
   
 
   const quantidade = workshopsOrdenados.length;
@@ -355,7 +680,7 @@ function mostrarWorkshops(nomeCidade, dadosCidade) {
 let html = `
   <div class="city-header-row">
     <div class="city-title">${nomeCidade}</div>
-    <button class="clear-filter-btn" id="clearFilterBtn" type="button">
+    <button class="clear-filter-btn" data-action="clear-filter" type="button">
       Limpar
     </button>
   </div>
@@ -377,15 +702,6 @@ let html = `
   }
 
   sidebarContent.innerHTML = html;
-  const clearFilterBtn = document.getElementById("clearFilterBtn");
-if (clearFilterBtn) {
-  clearFilterBtn.addEventListener("click", () => {
-    searchInput.value = "";
-    limparSelecao();
-    filtrarCidades("");
-  });
-}
-
   expandirSidebarNoMobile();
 }
 
@@ -397,12 +713,196 @@ function mostrarCarregando() {
   `;
 }
 
+function atualizarEstadoBotaoLocalizacao(ativo, texto = "Workshop perto de mim") {
+  if (!locateUserBtn) return;
+
+  locateUserBtn.disabled = ativo;
+  locateUserBtn.textContent = texto;
+}
+
+function mostrarMensagemLocalizacao(titulo, mensagem) {
+  sidebarContent.innerHTML = `
+    <div class="city-title">${titulo}</div>
+    <div class="sidebar-empty">
+      ${mensagem}
+    </div>
+  `;
+  expandirSidebarNoMobile();
+}
+
+function encontrarCidadeComWorkshop(nomeMunicipio) {
+  const nomeNormalizado = normalizarTexto(nomeMunicipio);
+  const nomesCidades = Object.keys(workshopsPorCidade);
+
+  const correspondenciaExata = nomesCidades.find((nomeCidade) => {
+    return normalizarTexto(nomeCidade) === nomeNormalizado;
+  });
+
+  if (correspondenciaExata) {
+    return correspondenciaExata;
+  }
+
+  return (
+    nomesCidades.find((nomeCidade) => {
+      const nomeCidadeNormalizado = normalizarTexto(nomeCidade);
+      return (
+        nomeCidadeNormalizado.includes(nomeNormalizado) ||
+        nomeNormalizado.includes(nomeCidadeNormalizado)
+      );
+    }) || null
+  );
+}
+
+async function obterMunicipioPorCoordenadas(latitude, longitude) {
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("lat", latitude);
+  url.searchParams.set("lon", longitude);
+  url.searchParams.set("zoom", "10");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("accept-language", "pt-BR");
+
+  const resposta = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json"
+    }
+  });
+
+  if (!resposta.ok) {
+    throw new Error(`Falha ao consultar localizacao: ${resposta.status}`);
+  }
+
+  const dados = await resposta.json();
+  const endereco = dados.address || {};
+
+  return (
+    endereco.city ||
+    endereco.town ||
+    endereco.municipality ||
+    endereco.village ||
+    endereco.county ||
+    ""
+  );
+}
+
+async function localizarWorkshopDoUsuario() {
+  if (!navigator.geolocation) {
+    mostrarMensagemLocalizacao(
+      "Localizacao indisponivel",
+      "Seu navegador nao oferece suporte a geolocalizacao."
+    );
+    return;
+  }
+
+  atualizarEstadoBotaoLocalizacao(true, "Localizando...");
+
+  try {
+    const posicao = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 300000
+      });
+    });
+
+    const { latitude, longitude } = posicao.coords;
+    const nomeMunicipio = await obterMunicipioPorCoordenadas(latitude, longitude);
+
+    if (!nomeMunicipio) {
+      mostrarMensagemLocalizacao(
+        "Localizacao encontrada",
+        "Nao foi possivel identificar o municipio a partir da sua localizacao."
+      );
+      return;
+    }
+
+    const nomeCidadeComWorkshop = encontrarCidadeComWorkshop(nomeMunicipio);
+
+    if (!nomeCidadeComWorkshop) {
+      map.setView([latitude, longitude], 9);
+      mostrarMensagemLocalizacao(
+        "Municipio identificado",
+        `Voce esta em ${nomeMunicipio}, mas ainda nao ha workshop cadastrado para esse municipio.`
+      );
+      return;
+    }
+
+    const dadosCidade = workshopsPorCidade[nomeCidadeComWorkshop];
+    const itemCidade = marcadores.find((item) => item.nomeCidade === nomeCidadeComWorkshop);
+
+    if (searchInput) {
+      searchInput.value = nomeCidadeComWorkshop;
+      atualizarVisibilidadeBotaoLimpar();
+    }
+
+    filtrarCidades(nomeCidadeComWorkshop);
+
+    if (itemCidade) {
+      selecionarCidade(
+        itemCidade.nomeCidade,
+        itemCidade.dadosCidade,
+        itemCidade.marcador,
+        itemCidade.camadaMunicipio
+      );
+    } else if (dadosCidade?.coordenadas) {
+      map.setView(dadosCidade.coordenadas, 8);
+      mostrarWorkshops(nomeCidadeComWorkshop, dadosCidade);
+    }
+  } catch (erro) {
+    const mensagem =
+      erro?.code === 1
+        ? "A permissao de localizacao foi negada."
+        : erro?.code === 2
+          ? "Nao foi possivel obter sua localizacao."
+          : erro?.code === 3
+            ? "A localizacao demorou demais para responder."
+            : "Nao foi possivel localizar seu municipio agora.";
+
+    mostrarMensagemLocalizacao("Erro de localizacao", mensagem);
+  } finally {
+    atualizarEstadoBotaoLocalizacao(false, "Workshop perto de mim");
+  }
+}
+
+function obterMapaMunicipioParaRegiao() {
+  const mapaMunicipioParaRegiao = new Map();
+
+  Object.values(REGIOES_CONFIG).forEach((regiao) => {
+    if (!regiao || !Array.isArray(regiao.municipios)) return;
+
+    regiao.municipios.forEach((municipio) => {
+      mapaMunicipioParaRegiao.set(normalizarTexto(municipio), regiao);
+    });
+  });
+
+  return mapaMunicipioParaRegiao;
+}
+
+function obterRegiaoDoMunicipio(nomeMunicipio) {
+  const municipiosPorRegiao = obterMapaMunicipioParaRegiao();
+  return municipiosPorRegiao.get(normalizarTexto(nomeMunicipio)) || null;
+}
+
+function obterCorRegiao(nomeMunicipio) {
+  const regiao = obterRegiaoDoMunicipio(nomeMunicipio);
+  return regiao?.cor || null;
+}
+
 function estiloMunicipioBase(temWorkshop) {
+  return estiloMunicipioPorNome("", temWorkshop);
+}
+
+function estiloMunicipioPorNome(nomeMunicipio, temWorkshop) {
+  const corRegiao = obterCorRegiao(nomeMunicipio);
+  const fillColor = temWorkshop
+    ? "#6ee7b7"
+    : corRegiao || "#cbd5e1";
+
   return {
     color: temWorkshop ? "#047857" : "#94a3b8",
     weight: temWorkshop ? 2 : 1,
-    fillColor: temWorkshop ? "#6ee7b7" : "#cbd5e1",
-    fillOpacity: temWorkshop ? 0.2 : 0.08
+    fillColor,
+    fillOpacity: temWorkshop ? 0.22 : (corRegiao ? 0.32 : 0.08)
   };
 }
 
@@ -416,7 +916,8 @@ function destacarMunicipio(camada) {
 }
 
 function resetarMunicipio(camada, temWorkshop) {
-  camada.setStyle(estiloMunicipioBase(temWorkshop));
+  const nomeMunicipio = obterNomeMunicipio(camada.feature);
+  camada.setStyle(estiloMunicipioPorNome(nomeMunicipio, temWorkshop));
 }
 
 function obterNomeMunicipio(feature) {
@@ -465,7 +966,7 @@ function limparSelecao() {
 }
 
 function mostrarResultadosBusca(textoBusca) {
-  const termo = textoBusca.toLowerCase().trim();
+  const termo = normalizarTexto(textoBusca);
 
   if (termo === "") {
     mostrarTodosOsWorkshops();
@@ -476,17 +977,17 @@ function mostrarResultadosBusca(textoBusca) {
 
   for (const nomeCidade in workshopsPorCidade) {
     const dadosCidade = workshopsPorCidade[nomeCidade];
-    const cidadeCorresponde = nomeCidade.toLowerCase().includes(termo);
+    const cidadeCorresponde = normalizarTexto(nomeCidade).includes(termo);
 
     const workshopsFiltrados = dadosCidade.workshops
       .filter((workshop) => {
-        const universidadeCorresponde = workshop.universidade
-          .toLowerCase()
-          .includes(termo);
+        const universidadeCorresponde = normalizarTexto(workshop.universidade).includes(termo);
+        const instituicaoCorresponde = normalizarTexto(workshop.instituicao).includes(termo);
+        const localCorresponde = normalizarTexto(workshop.local).includes(termo);
 
-        return cidadeCorresponde || universidadeCorresponde;
+        return cidadeCorresponde || universidadeCorresponde || instituicaoCorresponde || localCorresponde;
       })
-      .sort((a, b) => obterOrdemStatus(a.status) - obterOrdemStatus(b.status));
+      .sort(compararWorkshops);
 
     if (workshopsFiltrados.length > 0) {
       resultados.push({
@@ -518,7 +1019,7 @@ function mostrarResultadosBusca(textoBusca) {
 
   resultados.forEach((resultado) => {
     html += `
-      <div style="margin: 18px 0 10px; font-weight: bold; color: #0f172a;">
+      <div class="city-section-title">
         ${resultado.nomeCidade}
       </div>
     `;
@@ -533,14 +1034,18 @@ function mostrarResultadosBusca(textoBusca) {
 }
 
 function filtrarCidades(textoBusca) {
-  const termo = textoBusca.toLowerCase().trim();
+  const termo = normalizarTexto(textoBusca);
 
   marcadores.forEach((item) => {
-    const cidadeCorresponde = item.nomeCidade.toLowerCase().includes(termo);
+    const cidadeCorresponde = normalizarTexto(item.nomeCidade).includes(termo);
 
-    const universidadeCorresponde = item.dadosCidade.workshops.some((workshop) =>
-      workshop.universidade.toLowerCase().includes(termo)
-    );
+    const universidadeCorresponde = item.dadosCidade.workshops.some((workshop) => {
+      return [
+        workshop.universidade,
+        workshop.instituicao,
+        workshop.local
+      ].some((campo) => normalizarTexto(campo).includes(termo));
+    });
 
     const mostrarItem = termo === "" || cidadeCorresponde || universidadeCorresponde;
 
@@ -550,7 +1055,7 @@ function filtrarCidades(textoBusca) {
       }
 
       if (item.camadaMunicipio) {
-        item.camadaMunicipio.setStyle(estiloMunicipioBase(true));
+        item.camadaMunicipio.setStyle(estiloMunicipioPorNome(item.nomeCidade, true));
       }
     } else {
       if (map.hasLayer(item.marcador)) {
@@ -573,8 +1078,9 @@ function filtrarCidades(textoBusca) {
 async function carregarWorkshopsDaAPI() {
   try {
     const resposta = await fetch(API_URL);
-    const dados = await resposta.json();
-    workshopsPorCidade = dados;
+    const texto = await resposta.text();
+    cacheDados = texto;
+    workshopsPorCidade = JSON.parse(texto);
   } catch (erro) {
     console.error("Erro ao carregar workshops da API:", erro);
 
@@ -596,7 +1102,7 @@ async function carregarGeoJSON() {
       style: (feature) => {
         const nomeMunicipio = obterNomeMunicipio(feature);
         const temWorkshop = !!workshopsPorCidade[nomeMunicipio];
-        return estiloMunicipioBase(temWorkshop);
+        return estiloMunicipioPorNome(nomeMunicipio, temWorkshop);
       },
       onEachFeature: (feature, layer) => {
         const nomeMunicipio = obterNomeMunicipio(feature);
@@ -745,41 +1251,78 @@ async function iniciarMapa() {
   await carregarWorkshopsDaAPI();
   criarMarcadores();
   mostrarTodosOsWorkshops();
-
-  setTimeout(async () => {
-    await carregarGeoJSON();
-    await carregarContornoEstado();
-  }, 100);
+  await carregarGeoJSON();
+  await carregarContornoEstado();
 }
 
 iniciarMapa();
 
-searchInput.addEventListener("input", (event) => {
-  const valor = event.target.value;
+if (searchInput) {
+  searchInput.addEventListener("input", (event) => {
+    const valor = event.target.value;
 
-  if (valor.trim() === "") {
+    atualizarVisibilidadeBotaoLimpar();
+
+    if (valor.trim() === "") {
+      limparSelecao();
+      filtrarCidades("");
+      return;
+    }
+
+    filtrarCidades(valor);
+  });
+}
+
+if (clearSearchBtn) {
+  clearSearchBtn.addEventListener("click", () => {
+    if (!searchInput) return;
+
+    searchInput.value = "";
+    atualizarVisibilidadeBotaoLimpar();
     limparSelecao();
     filtrarCidades("");
-    return;
-  }
+  });
+}
 
-  filtrarCidades(valor);
-});
+if (locateUserBtn) {
+  locateUserBtn.addEventListener("click", () => {
+    localizarWorkshopDoUsuario();
+  });
+}
 
-let cacheDados = "";
+if (sidebarContent) {
+  sidebarContent.addEventListener("click", (event) => {
+    const clearFilterBtn = event.target.closest('[data-action="clear-filter"]');
+    if (!clearFilterBtn || !searchInput) return;
+
+    searchInput.value = "";
+    atualizarVisibilidadeBotaoLimpar();
+    limparSelecao();
+    filtrarCidades("");
+  });
+}
 
 async function atualizarDadosSeMudou() {
-  const resposta = await fetch(API_URL);
-  const texto = await resposta.text();
+  try {
+    const resposta = await fetch(API_URL);
+    const texto = await resposta.text();
 
-  // desenharContornoGoias(geojson);
+    if (texto !== cacheDados) {
+      cacheDados = texto;
+      workshopsPorCidade = JSON.parse(texto);
 
-  if (texto !== cacheDados) {
-    cacheDados = texto;
-    workshopsPorCidade = JSON.parse(texto);
+      criarMarcadores();
 
-    criarMarcadores();
-    mostrarResultadosBusca(searchInput.value);
+      if (geoJsonLayer) {
+        map.removeLayer(geoJsonLayer);
+        geoJsonLayer = null;
+        await carregarGeoJSON();
+      }
+
+      filtrarCidades(searchInput ? searchInput.value : "");
+    }
+  } catch (erro) {
+    console.error("Erro ao atualizar workshops:", erro);
   }
 }
 

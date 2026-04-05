@@ -51,6 +51,30 @@ body {
   z-index: 10;
 }
 
+.location-btn {
+  border: 1px solid #0f766e;
+  background: #ecfeff;
+  color: #0f766e;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.location-btn:hover {
+  background: #cffafe;
+  transform: translateY(-1px);
+}
+
+.location-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+
 .map-search-bar input {
   width: 100%;
   padding: 12px 16px;
@@ -297,6 +321,10 @@ body {
     width: 100%;
   }
 
+  .location-btn {
+    width: 100%;
+  }
+
   .sidebar {
     position: fixed;
     left: 0;
@@ -373,58 +401,6 @@ body {
   }
 }
 
-.custom-city-marker-wrapper {
-  background: transparent;
-  border: none;
-}
-
-.custom-city-marker {
-  position: relative;
-  width: 26px;
-  height: 38px;
-  background: linear-gradient(180deg, #0f766e, #0b5d56);
-  border: 2px solid #ffffff;
-  border-radius: 18px 18px 18px 0;
-  transform: rotate(-45deg);
-  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28);
-}
-
-.custom-city-marker span {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 10px;
-  height: 10px;
-  background: #ffffff;
-  border-radius: 50%;
-}
-
-.custom-city-marker-wrapper {
-  background: transparent;
-  border: none;
-}
-
-.custom-city-marker {
-  position: relative;
-  width: 26px;
-  height: 38px;
-  background: linear-gradient(180deg, #0f766e, #155e75);
-  border: 2px solid #ffffff;
-  border-radius: 18px 18px 18px 0;
-  transform: rotate(-45deg);
-  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28);
-}
-
-.custom-city-marker span {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 10px;
-  height: 10px;
-  background: #ffffff;
-  border-radius: 50%;
-}
-
 .custom-marker .pin {
   width: 16px;
   height: 16px;
@@ -444,6 +420,12 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.city-section-title {
+  margin: 18px 0 10px;
+  font-weight: bold;
+  color: #0f172a;
 }
 
 .clear-filter-btn {
@@ -493,14 +475,6 @@ body {
 
 .clear-search-btn:hover {
   color: #10b981; /* verde */
-}
-
-.search-container {
-  position: relative;
-}
-
-#searchInput {
-  padding-right: 35px;
 }
 
 #clearSearchBtn {
