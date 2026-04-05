@@ -594,19 +594,40 @@ function mostrarMensagemInicial() {
   mostrarTodosOsWorkshops();
 }
 
+function obterLogoWorkshop(workshop) {
+  if (!workshop || typeof workshop !== "object") return "";
+
+  return workshop.logo || "";
+}
+
 function montarCardWorkshop(workshop, nomeCidade) {
   const classeStatus = obterClasseStatus(workshop.status);
   const inscricaoEncerrada = normalizarTexto(workshop.status).includes("encerrado");
   const tituloAcao = `${workshop.universidade} - Workshop de Ideação`;
 
+  const logoWorkshop = obterLogoWorkshop(workshop);
+
   let html = `
     <div class="workshop-card">
+      ${
+        logoWorkshop
+          ? `<div class="workshop-logo-wrap">
+              <img src="${logoWorkshop}" alt="Logo da instituiÃ§Ã£o" class="workshop-logo">
+            </div>`
+          : ""
+      }
       <h4>${tituloAcao}</h4>
       <div class="status-badge ${classeStatus}">${workshop.status}</div>
-      <div class="workshop-description">${workshop.descricao}</div>
       <div class="workshop-item"><strong>Município:</strong> ${nomeCidade}</div>
-      <div class="workshop-item"><strong>Data:</strong> ${formatarData(workshop.data)}</div>
+      <div class="workshop-date-highlight">
+        <span class="workshop-date-icon" aria-hidden="true">📅</span>
+        <div class="workshop-date-content">
+          <span class="workshop-date-label">Data do workshop</span>
+          <strong class="workshop-date-value">${formatarData(workshop.data)}</strong>
+        </div>
+      </div>
       <div class="workshop-item"><strong>Horário:</strong> ${workshop.horario}</div>
+      <div class="workshop-item"><strong>Município:</strong> ${nomeCidade}</div>
       <div class="workshop-item"><strong>Local:</strong> ${workshop.local}</div>
       <div class="workshop-item"><strong>Instituição:</strong> ${workshop.instituicao}</div>
   `;
@@ -1086,6 +1107,12 @@ async function carregarWorkshopsDaAPI() {
     const texto = await resposta.text();
     cacheDados = texto;
     workshopsPorCidade = JSON.parse(texto);
+
+    const primeiraCidade = Object.keys(workshopsPorCidade)[0];
+    const primeiroWorkshop = primeiraCidade
+      ? workshopsPorCidade[primeiraCidade]?.workshops?.[0]
+      : null;
+
   } catch (erro) {
     console.error("Erro ao carregar workshops da API:", erro);
 
