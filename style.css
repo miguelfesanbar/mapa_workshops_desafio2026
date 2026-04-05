@@ -158,10 +158,14 @@ body {
 }
 
 .city-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: #0f172a;
-  margin-bottom: 8px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #052e2b;
+  margin-bottom: 10px;
+  line-height: 1.1;
+  text-wrap: balance;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 .city-meta {
@@ -393,6 +397,15 @@ body {
     height: calc(100% - 80px);
   }
 
+  .city-title {
+    font-size: 24px;
+  }
+
+  .city-section-title {
+    font-size: 14px;
+    padding: 9px 12px;
+  }
+
   .legend-box {
     right: 12px;
     bottom: 56vh;
@@ -423,9 +436,15 @@ body {
 }
 
 .city-section-title {
-  margin: 18px 0 10px;
-  font-weight: bold;
-  color: #0f172a;
+  margin: 22px 0 12px;
+  padding: 10px 14px;
+  border-left: 4px solid #0f766e;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(15, 118, 110, 0.12), rgba(15, 118, 110, 0.03));
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #0b3b38;
 }
 
 .clear-filter-btn {

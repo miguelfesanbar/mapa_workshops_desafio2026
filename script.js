@@ -582,6 +582,14 @@ function compararWorkshops(a, b) {
   return 0;
 }
 
+function workshopEstaComInscricaoAberta(workshop) {
+  return normalizarTexto(workshop?.status).includes("aberta");
+}
+
+function contarWorkshopsComInscricaoAberta(workshops) {
+  return workshops.filter(workshopEstaComInscricaoAberta).length;
+}
+
 function mostrarMensagemInicial() {
   mostrarTodosOsWorkshops();
 }
@@ -643,15 +651,12 @@ function mostrarTodosOsWorkshops() {
   }
 
   const totalWorkshops = resultados.reduce((total, item) => {
-    return total + item.workshops.length;
+    return total + contarWorkshopsComInscricaoAberta(item.workshops);
   }, 0);
 
   let html = `
-  <div class="city-header-row">
-    <div class="city-title">Todos os workshops</div>
-  </div>
   <div class="city-meta">
-    ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} ${totalWorkshops > 1 ? "disponíveis" : "disponível"}
+    ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} com inscrição aberta
   </div>
   `;
 
@@ -675,7 +680,7 @@ function mostrarWorkshops(nomeCidade, dadosCidade) {
   const workshopsOrdenados = [...dadosCidade.workshops].sort(compararWorkshops);
   
 
-  const quantidade = workshopsOrdenados.length;
+  const quantidade = contarWorkshopsComInscricaoAberta(workshopsOrdenados);
 
 let html = `
   <div class="city-header-row">
@@ -685,11 +690,11 @@ let html = `
     </button>
   </div>
   <div class="city-meta">
-    ${quantidade} workshop${quantidade > 1 ? "s" : ""} encontrado${quantidade > 1 ? "s" : ""}
+    ${quantidade} workshop${quantidade > 1 ? "s" : ""} com inscrição aberta
   </div>
 `;
 
-  if (quantidade === 0) {
+  if (workshopsOrdenados.length === 0) {
     html += `
       <div class="sidebar-empty">
         Nenhum workshop cadastrado para este município.
@@ -1007,13 +1012,13 @@ function mostrarResultadosBusca(textoBusca) {
   }
 
   const totalWorkshops = resultados.reduce((total, item) => {
-    return total + item.workshops.length;
+    return total + contarWorkshopsComInscricaoAberta(item.workshops);
   }, 0);
 
   let html = `
     <div class="city-title">Resultado da busca</div>
     <div class="city-meta">
-      ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} encontrado${totalWorkshops > 1 ? "s" : ""}
+      ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} com inscrição aberta
     </div>
   `;
 
