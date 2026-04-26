@@ -570,9 +570,6 @@ function converterParaDataOrdenacao(data) {
 }
 
 function compararWorkshops(a, b) {
-  const ordemStatus = obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
-  if (ordemStatus !== 0) return ordemStatus;
-
   const dataA = converterParaDataOrdenacao(a.data);
   const dataB = converterParaDataOrdenacao(b.data);
 
@@ -580,7 +577,33 @@ function compararWorkshops(a, b) {
   if (dataA) return -1;
   if (dataB) return 1;
 
-  return 0;
+  const ordemStatus = obterOrdemStatus(a.status) - obterOrdemStatus(b.status);
+  if (ordemStatus !== 0) return ordemStatus;
+
+  return String(a.universidade || a.instituicao || "").localeCompare(
+    String(b.universidade || b.instituicao || ""),
+    "pt-BR"
+  );
+}
+
+function workshopEstaEncerrado(workshop) {
+  return normalizarTexto(workshop?.status).includes("encerrad");
+}
+
+function workshopDeveAparecer(workshop) {
+  return !workshopEstaEncerrado(workshop);
+}
+
+function obterWorkshopsVisiveis(dadosCidade) {
+  if (!Array.isArray(dadosCidade?.workshops)) return [];
+
+  return dadosCidade.workshops
+    .filter(workshopDeveAparecer)
+    .sort(compararWorkshops);
+}
+
+function cidadeTemWorkshopsVisiveis(nomeCidade) {
+  return obterWorkshopsVisiveis(workshopsPorCidade[nomeCidade]).length > 0;
 }
 
 function workshopEstaComInscricaoAberta(workshop) {
@@ -612,7 +635,7 @@ function obterLogoWorkshop(workshop) {
 
 function montarCardWorkshop(workshop, nomeCidade) {
   const classeStatus = obterClasseStatus(workshop.status);
-  const inscricaoEncerrada = normalizarTexto(workshop.status).includes("encerrado");
+  const inscricaoEncerrada = workshopEstaEncerrado(workshop);
   const tituloAcao = `${workshop.universidade} - Workshop de Idea&ccedil;&atilde;o`;
 
   const logoWorkshop = obterLogoWorkshop(workshop);
@@ -661,7 +684,7 @@ function mostrarTodosOsWorkshops() {
   for (const nomeCidade in workshopsPorCidade) {
     const dadosCidade = workshopsPorCidade[nomeCidade];
 
-    const workshopsOrdenados = [...dadosCidade.workshops].sort(compararWorkshops);
+    const workshopsOrdenados = obterWorkshopsVisiveis(dadosCidade);
 
     if (workshopsOrdenados.length > 0) {
       resultados.push({
@@ -670,6 +693,13 @@ function mostrarTodosOsWorkshops() {
       });
     }
   }
+
+  resultados.sort((a, b) => {
+    return (
+      compararWorkshops(a.workshops[0], b.workshops[0]) ||
+      a.nomeCidade.localeCompare(b.nomeCidade, "pt-BR")
+    );
+  });
 
   if (resultados.length === 0) {
     atualizarResumoWorkshops(0);
@@ -706,7 +736,7 @@ function mostrarTodosOsWorkshops() {
 }
 
 function mostrarWorkshops(nomeCidade, dadosCidade) {
-  const workshopsOrdenados = [...dadosCidade.workshops].sort(compararWorkshops);
+  const workshopsOrdenados = obterWorkshopsVisiveis(dadosCidade);
   
 
   const quantidade = contarWorkshopsComInscricaoAberta(workshopsOrdenados);
@@ -767,7 +797,7 @@ function mostrarMensagemLocalizacao(titulo, mensagem) {
 
 function encontrarCidadeComWorkshop(nomeMunicipio) {
   const nomeNormalizado = normalizarTexto(nomeMunicipio);
-  const nomesCidades = Object.keys(workshopsPorCidade);
+  const nomesCidades = Object.keys(workshopsPorCidade).filter(cidadeTemWorkshopsVisiveis);
 
   const correspondenciaExata = nomesCidades.find((nomeCidade) => {
     return normalizarTexto(nomeCidade) === nomeNormalizado;
@@ -968,7 +998,7 @@ function obterNomeMunicipio(feature) {
 function selecionarCidade(nomeCidade, dadosCidade, marcador, camadaMunicipio) {
   if (camadaMunicipioSelecionada) {
     const nomeAnterior = obterNomeMunicipio(camadaMunicipioSelecionada.feature);
-    const temWorkshopAnterior = !!workshopsPorCidade[nomeAnterior];
+    const temWorkshopAnterior = cidadeTemWorkshopsVisiveis(nomeAnterior);
     resetarMunicipio(camadaMunicipioSelecionada, temWorkshopAnterior);
   }
 
@@ -991,7 +1021,7 @@ function limparSelecao() {
 
   if (camadaMunicipioSelecionada) {
     const nomeCidade = obterNomeMunicipio(camadaMunicipioSelecionada.feature);
-    const temWorkshop = !!workshopsPorCidade[nomeCidade];
+    const temWorkshop = cidadeTemWorkshopsVisiveis(nomeCidade);
     resetarMunicipio(camadaMunicipioSelecionada, temWorkshop);
     camadaMunicipioSelecionada = null;
   }
@@ -1014,15 +1044,14 @@ function mostrarResultadosBusca(textoBusca) {
     const dadosCidade = workshopsPorCidade[nomeCidade];
     const cidadeCorresponde = normalizarTexto(nomeCidade).includes(termo);
 
-    const workshopsFiltrados = dadosCidade.workshops
+    const workshopsFiltrados = obterWorkshopsVisiveis(dadosCidade)
       .filter((workshop) => {
         const universidadeCorresponde = normalizarTexto(workshop.universidade).includes(termo);
         const instituicaoCorresponde = normalizarTexto(workshop.instituicao).includes(termo);
         const localCorresponde = normalizarTexto(workshop.local).includes(termo);
 
         return cidadeCorresponde || universidadeCorresponde || instituicaoCorresponde || localCorresponde;
-      })
-      .sort(compararWorkshops);
+      });
 
     if (workshopsFiltrados.length > 0) {
       resultados.push({
@@ -1047,6 +1076,13 @@ function mostrarResultadosBusca(textoBusca) {
   }, 0);
 
   atualizarResumoWorkshops(totalWorkshops);
+
+  resultados.sort((a, b) => {
+    return (
+      compararWorkshops(a.workshops[0], b.workshops[0]) ||
+      a.nomeCidade.localeCompare(b.nomeCidade, "pt-BR")
+    );
+  });
 
   let html = `
     <div class="city-title">Resultado da busca</div>
@@ -1073,8 +1109,9 @@ function filtrarCidades(textoBusca) {
 
   marcadores.forEach((item) => {
     const cidadeCorresponde = normalizarTexto(item.nomeCidade).includes(termo);
+    const workshopsVisiveis = obterWorkshopsVisiveis(item.dadosCidade);
 
-    const universidadeCorresponde = item.dadosCidade.workshops.some((workshop) => {
+    const universidadeCorresponde = workshopsVisiveis.some((workshop) => {
       return [
         workshop.universidade,
         workshop.instituicao,
@@ -1142,13 +1179,13 @@ async function carregarGeoJSON() {
     geoJsonLayer = L.geoJSON(geojson, {
       style: (feature) => {
         const nomeMunicipio = obterNomeMunicipio(feature);
-        const temWorkshop = !!workshopsPorCidade[nomeMunicipio];
+        const temWorkshop = cidadeTemWorkshopsVisiveis(nomeMunicipio);
         return estiloMunicipioPorNome(nomeMunicipio, temWorkshop);
       },
       onEachFeature: (feature, layer) => {
         const nomeMunicipio = obterNomeMunicipio(feature);
         const dadosCidade = workshopsPorCidade[nomeMunicipio];
-        const temWorkshop = !!dadosCidade;
+        const temWorkshop = cidadeTemWorkshopsVisiveis(nomeMunicipio);
 
         layer.on("mouseover", () => {
           if (layer !== camadaMunicipioSelecionada && temWorkshop) {
@@ -1223,6 +1260,11 @@ function criarMarcadores() {
 
   for (const nomeCidade in workshopsPorCidade) {
     const dadosCidade = workshopsPorCidade[nomeCidade];
+    const workshopsVisiveis = obterWorkshopsVisiveis(dadosCidade);
+
+    if (workshopsVisiveis.length === 0) {
+      continue;
+    }
 
     let latitude = dadosCidade.coordenadas?.[0];
     let longitude = dadosCidade.coordenadas?.[1];
@@ -1251,6 +1293,7 @@ function criarMarcadores() {
       nomeCidade,
       dadosCidade: {
         ...dadosCidade,
+        workshops: workshopsVisiveis,
         coordenadas: coordenadasCorrigidas
       },
       marcador,
