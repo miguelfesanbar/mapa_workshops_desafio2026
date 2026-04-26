@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mapa de Workshops de Ideação - Desafio Agrostartup</title>
+  <title>Mapa de Workshops de Idea&ccedil;&atilde;o - Desafio Agrostartup</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <!-- CSS do Leaflet -->
   <link
@@ -11,62 +12,65 @@
     href="https://unpkg.com/leaflet/dist/leaflet.css"
   />
 
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=19" />
 </head>
 <body>
-  <div class="app"> 
-    <div class="map-area">
-      <div class="topbar">
-  <div class="topbar-content">
-    
-    <img src="https://sistemafaeg.com.br/dist/img/logos/logo-desafio-agrostartup-10-anos.webp" alt="Logo" class="topbar-logo">
-    
-    <div class="topbar-text">
-      <h1>Mapa de Workshops de Ideação</h1>
-      <p>Pesquise por cidade ou universidade e clique no mapa para ver os workshops</p>
-    </div>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-content">
+        <img src="https://sistemafaeg.com.br/dist/img/logos/logo-desafio-agrostartup-10-anos.webp" alt="Logo" class="topbar-logo">
 
-  </div>
-</div>
-    
-      <div class="map-search-bar">
-        <div class="search-container">
-          <input type="text" id="searchInput" placeholder="Buscar cidade ou instituição de ensino...">
-          <button id="clearSearchBtn" type="button">✕</button>
-        </div>
-        <button id="locateUserBtn" type="button" class="location-btn">
-          Workshop perto de mim
-        </button>
-      </div>
-    
-      <div class="map-wrapper">
-        <div id="map"></div>
-    
-        <!-- <div class="legend-box">
-          <strong>Legenda</strong>
-          Áreas destacadas representam cidades com workshops cadastrados.
-        </div> -->
-      </div>
-    </div>
-
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-drag-area" id="sidebarDragArea">
-        <div class="sidebar-handle" id="sidebarHandle"></div>
-    
-        <div class="sidebar-header">
-          <h2>Workshops de Ideação</h2>
-          <p>Lista de workshops disponíveis</p>
+        <div class="topbar-text">
+          <h1>Trilha Acad&ecirc;mica</h1>
+          <p>Inscri&ccedil;&otilde;es abertas, encontre sua institui&ccedil;&atilde;o e inscreva-se!</p>
         </div>
       </div>
-    
-      <div id="sidebar-content" class="sidebar-content"></div>
-    </aside>
+    </header>
+
+    <main class="content-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-drag-area" id="sidebarDragArea">
+          <div class="sidebar-handle" id="sidebarHandle"></div>
+
+          <div class="sidebar-summary-bar">
+            <div id="workshopSummary" class="city-meta" aria-live="polite">
+              <strong>0</strong>
+              <span>workshops com inscri&ccedil;&atilde;o aberta</span>
+            </div>
+
+            <button id="locateUserBtn" type="button" class="location-btn sidebar-location-btn">
+              <span class="location-btn-icon" aria-hidden="true">&#128205;</span>
+              <span>Workshop perto de mim</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="sidebar-content" class="sidebar-content"></div>
+      </aside>
+
+      <div class="map-area">
+        <div class="map-search-bar">
+          <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Buscar cidade ou institui&ccedil;&atilde;o de ensino...">
+            <button id="clearSearchBtn" type="button" aria-label="Limpar busca">&times;</button>
+          </div>
+        </div>
+
+        <div class="map-wrapper">
+          <div id="map"></div>
+
+          <!-- <div class="legend-box">
+            <strong>Legenda</strong>
+            &Aacute;reas destacadas representam cidades com workshops cadastrados.
+          </div> -->
+        </div>
+      </div>
+    </main>
   </div>
 
   <!-- JS do Leaflet -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <script src="script.js?v=3"></script>
+  <script src="script.js?v=14"></script>
 </body>
-
 </html>

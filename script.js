@@ -11,6 +11,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
 const sidebar = document.getElementById("sidebar");
 const sidebarDragArea = document.getElementById("sidebarDragArea");
 const sidebarContent = document.getElementById("sidebar-content");
+const workshopSummary = document.getElementById("workshopSummary");
 const searchInput = document.getElementById("searchInput");
 const clearSearchBtn = document.getElementById("clearSearchBtn");
 const locateUserBtn = document.getElementById("locateUserBtn");
@@ -590,6 +591,15 @@ function contarWorkshopsComInscricaoAberta(workshops) {
   return workshops.filter(workshopEstaComInscricaoAberta).length;
 }
 
+function atualizarResumoWorkshops(quantidade) {
+  if (!workshopSummary) return;
+
+  workshopSummary.innerHTML = `
+    <strong>${quantidade}</strong>
+    <span>workshop${quantidade > 1 ? "s" : ""} com inscri&ccedil;&atilde;o aberta</span>
+  `;
+}
+
 function mostrarMensagemInicial() {
   mostrarTodosOsWorkshops();
 }
@@ -603,7 +613,7 @@ function obterLogoWorkshop(workshop) {
 function montarCardWorkshop(workshop, nomeCidade) {
   const classeStatus = obterClasseStatus(workshop.status);
   const inscricaoEncerrada = normalizarTexto(workshop.status).includes("encerrado");
-  const tituloAcao = `${workshop.universidade} - Workshop de Ideação`;
+  const tituloAcao = `${workshop.universidade} - Workshop de Idea&ccedil;&atilde;o`;
 
   const logoWorkshop = obterLogoWorkshop(workshop);
 
@@ -612,32 +622,31 @@ function montarCardWorkshop(workshop, nomeCidade) {
       ${
         logoWorkshop
           ? `<div class="workshop-logo-wrap">
-              <img src="${logoWorkshop}" alt="Logo da instituiÃ§Ã£o" class="workshop-logo">
+              <img src="${logoWorkshop}" alt="Logo da institui&ccedil;&atilde;o" class="workshop-logo">
             </div>`
           : ""
       }
       <h4>${tituloAcao}</h4>
       <div class="status-badge ${classeStatus}">${workshop.status}</div>
-      <div class="workshop-item"><strong>Município:</strong> ${nomeCidade}</div>
       <div class="workshop-date-highlight">
-        <span class="workshop-date-icon" aria-hidden="true">📅</span>
+        <span class="workshop-date-icon" aria-hidden="true">&#128197;</span>
         <div class="workshop-date-content">
           <span class="workshop-date-label">Data do workshop</span>
           <strong class="workshop-date-value">${formatarData(workshop.data)}</strong>
         </div>
       </div>
-      <div class="workshop-item"><strong>Horário:</strong> ${workshop.horario}</div>
-      <div class="workshop-item"><strong>Município:</strong> ${nomeCidade}</div>
+      <div class="workshop-item"><strong>Hor&aacute;rio:</strong> ${workshop.horario}</div>
+      <div class="workshop-item"><strong>Munic&iacute;pio:</strong> ${nomeCidade}</div>
       <div class="workshop-item"><strong>Local:</strong> ${workshop.local}</div>
-      <div class="workshop-item"><strong>Instituição:</strong> ${workshop.instituicao}</div>
+      <div class="workshop-item"><strong>Institui&ccedil;&atilde;o:</strong> ${workshop.instituicao}</div>
   `;
 
   if (inscricaoEncerrada) {
-    html += `<span class="workshop-link disabled">Inscrições encerradas</span>`;
+    html += `<span class="workshop-link disabled">Inscri&ccedil;&otilde;es encerradas</span>`;
   } else {
     html += `
-      <a class="workshop-link" href="${workshop.linkInscricao}" target="_blank">
-        Fazer inscrição
+      <a class="workshop-link" href="${workshop.linkInscricao}" target="_blank" rel="noopener">
+        Fazer inscri&ccedil;&atilde;o
       </a>
     `;
   }
@@ -663,9 +672,10 @@ function mostrarTodosOsWorkshops() {
   }
 
   if (resultados.length === 0) {
+    atualizarResumoWorkshops(0);
     sidebarContent.innerHTML = `
       <div class="sidebar-empty">
-        Nenhum workshop disponível no momento.
+        Nenhum workshop dispon&iacute;vel no momento.
       </div>
     `;
     return;
@@ -675,11 +685,9 @@ function mostrarTodosOsWorkshops() {
     return total + contarWorkshopsComInscricaoAberta(item.workshops);
   }, 0);
 
-  let html = `
-  <div class="city-meta">
-    ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} com inscrição aberta
-  </div>
-  `;
+  atualizarResumoWorkshops(totalWorkshops);
+
+  let html = "";
 
   resultados.forEach((resultado) => {
     html += `
@@ -702,6 +710,7 @@ function mostrarWorkshops(nomeCidade, dadosCidade) {
   
 
   const quantidade = contarWorkshopsComInscricaoAberta(workshopsOrdenados);
+  atualizarResumoWorkshops(quantidade);
 
 let html = `
   <div class="city-header-row">
@@ -710,15 +719,12 @@ let html = `
       Limpar
     </button>
   </div>
-  <div class="city-meta">
-    ${quantidade} workshop${quantidade > 1 ? "s" : ""} com inscrição aberta
-  </div>
 `;
 
   if (workshopsOrdenados.length === 0) {
     html += `
       <div class="sidebar-empty">
-        Nenhum workshop cadastrado para este município.
+        Nenhum workshop cadastrado para este munic&iacute;pio.
       </div>
     `;
   } else {
@@ -743,7 +749,10 @@ function atualizarEstadoBotaoLocalizacao(ativo, texto = "Workshop perto de mim")
   if (!locateUserBtn) return;
 
   locateUserBtn.disabled = ativo;
-  locateUserBtn.textContent = texto;
+  locateUserBtn.innerHTML = `
+    <span class="location-btn-icon" aria-hidden="true">&#128205;</span>
+    <span>${texto}</span>
+  `;
 }
 
 function mostrarMensagemLocalizacao(titulo, mensagem) {
@@ -1024,6 +1033,7 @@ function mostrarResultadosBusca(textoBusca) {
   }
 
   if (resultados.length === 0) {
+    atualizarResumoWorkshops(0);
     sidebarContent.innerHTML = `
       <div class="sidebar-empty">
         Nenhum workshop encontrado para a busca informada.
@@ -1036,11 +1046,10 @@ function mostrarResultadosBusca(textoBusca) {
     return total + contarWorkshopsComInscricaoAberta(item.workshops);
   }, 0);
 
+  atualizarResumoWorkshops(totalWorkshops);
+
   let html = `
     <div class="city-title">Resultado da busca</div>
-    <div class="city-meta">
-      ${totalWorkshops} workshop${totalWorkshops > 1 ? "s" : ""} com inscrição aberta
-    </div>
   `;
 
   resultados.forEach((resultado) => {
